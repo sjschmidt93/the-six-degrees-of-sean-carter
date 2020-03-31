@@ -8,9 +8,9 @@ API_URL = 'https://api.spotify.com/v1'
 AUTH_URL = 'https://accounts.spotify.com/api/token'
 CLIENT_ID = 'e7a111ec03b94df2924cdcabe28b4bf5'
 
-KANYE_WEST = '5K4W6rqBFWDnAN6FQUkS6x'
-KEVIN_ABSTRACT = '07EcmJpfAday8xGkslfanE'
-JAY_Z = '37i9dQZF1DZ06evO1XGbvi'
+# KANYE_WEST = '5K4W6rqBFWDnAN6FQUkS6x'
+# KEVIN_ABSTRACT = '07EcmJpfAday8xGkslfanE'
+# JAY_Z = '37i9dQZF1DZ06evO1XGbvi'
 
 def authorization_header():
 	response = requests.post(
