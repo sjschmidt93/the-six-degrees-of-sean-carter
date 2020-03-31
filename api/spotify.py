@@ -8,9 +8,17 @@ API_URL = 'https://api.spotify.com/v1'
 AUTH_URL = 'https://accounts.spotify.com/api/token'
 CLIENT_ID = 'e7a111ec03b94df2924cdcabe28b4bf5'
 
-# KANYE_WEST = '5K4W6rqBFWDnAN6FQUkS6x'
-# KEVIN_ABSTRACT = '07EcmJpfAday8xGkslfanE'
-# JAY_Z = '37i9dQZF1DZ06evO1XGbvi'
+KANYE_WEST = '5K4W6rqBFWDnAN6FQUkS6x'
+KEVIN_ABSTRACT = '07EcmJpfAday8xGkslfanE'
+JAY_Z = '37i9dQZF1DZ06evO1XGbvi'
+
+flatten = lambda l: [item for sublist in l for item in sublist]
+
+def flat_map(function, iterable):
+	return flatten(map(function, iterable))
+
+def unique_list(l):
+	return list(set(l))
 
 def authorization_header():
 	response = requests.post(
@@ -32,70 +40,92 @@ def get(url, params={}):
     params=params
   ).json()
 
-def get_artist(id):
-	url = API_URL + '/artists/' + id
+def artist(artist_id):
+	url = f'{API_URL}/artists/{artist_id}'
 	return get(url)
 
-def get_album(id):
-	url = API_URL + '/albums/' + id
+def album(album_id):
+	url = f'{API_URL}/albums/{album_id}'
 	return get(url)
 
-def get_artists_albums(id):
-	url = API_URL + '/artists/' + id + '/albums'
-	response = get(url)
-	if 'items' in response:
-		return response['items']
-	else:
-		return []
+def albums_tracks(album_id):
+	url = f'{API_URL}/albums/{album_id}/tracks'
+	return get(url)
+
+def artists_albums(artist_id):
+	url = f'{API_URL}/artists/{artist_id}/albums'
+	return get(url)
+
+def track(track_id):
+	url = f'{API_URL}/tracks/{track_id}'
+	return get(url)
+
+# returns array of all ids for artists 1 degree 
+# of separation from artist corresponding to artist_id
+def related_artists_ids(artist_id):
+	albums_response = artists_albums(artist_id)
+	album_ids = extract_field(albums_response)
+	track_responses = map(albums_tracks, album_ids)
+	tracks = flat_map(lambda track_response: track_response['items'], track_responses)
+	artist_objs = flat_map(lambda track: track['artists'], tracks)
+	artist_ids = list(map(lambda artist: artist['id'], artist_objs))
+	return filter(lambda id: id != artist_id, artist_ids)
+	
 
 def search(query, type):
   url = API_URL + '/search'
   params = {
-    "q": query,
-    "type": type
+    'q': query,
+    'type': type
   }
   response = get(url, params)
   return response
 
-def query(query, type, limit=10):
+# TODO: make extract_fields which takes field as an array
+def extract_field(response, field='id'):
+	items = response['items']
+	return list(map(lambda item: item[field], items))
+
+###
+
+def search_query(query, type, limit=10):
   search_response = search(query, type)
   items = search_response[type + 's']['items']
   # TODO: make this a func
   extractFields = lambda item: {
-    "name": item['name'],
-    "id": item['id']
+    'name': item['name'],
+    'id': item['id']
   }
   return list(map(extractFields, items))[:limit]
 
-id = lambda item: item['id']
+print(related_artists_ids(KANYE_WEST))
 
-# G = nx.Graph()
+	# G = nx.Graph()
 
-# artist1 = KANYE_WEST
-# artist2 = KEVIN_ABSTRACT
+	# queue = deque([(id, 0)])
+	# visited = []
 
-# queue = deque([artist1])
+	# while len(queue) > 0:
+	# 	(artist_id, dist) = queue.popleft()
+	# 	artist_albums = artists_albums(artist_id)
+	# 	album_ids = map(lambda item: item['id'], artist_albums)
 
-# visited = []
+	# 	visited.append(artist_id)
 
-# while len(queue) > 0:
-# 	artist_id = queue.popleft()
-# 	artists_albums = get_artists_albums(artist_id)
-# 	album_ids = map(id, artists_albums)
+	# 	artist = artists(artist_id)
+	# 	if 'name' in artist:
+	# 		print(artist['name'])
 
-# 	visited.append(artist_id)
+	# 	# TODO: create weighted edges based on number of features
+	# 	for album in map(albums, album_ids):
+	# 		if 'tracks' not in album:
+	# 			continue
+	# 		for track in album['tracks']['items']:
+	# 			for artist in track['artists']:
+	# 				featuring_artist_id = artist['id']
+	# 				if featuring_artist_id not in visited and featuring_artist_id not in queue and dist < degrees:
+	# 					G.add_edge(artist_id, artist['id'])
+	# 					queue.append((featuring_artist_id, dist + 1))
 
-# 	artist = get_artist(artist_id)
-# 	if 'name' in artist:
-# 		print artist['name']
-
-# 	# TODO: create weighted edges based on number of features
-# 	for album in map(get_album, album_ids):
-# 		if 'tracks' not in album:
-# 			continue
-# 		for track in album['tracks']['items']:
-# 			for artist in track['artists']:
-# 				featuring_artist_id = artist['id']
-# 				if featuring_artist_id not in visited and featuring_artist_id not in queue:
-# 					G.add_edge(artist_id, artist['id'])
-# 					queue.append(featuring_artist_id)
+#related_artists(KANYE_WEST, 1)
+#print(albums_tracks('7fJJK56U9fHixgO0HQkhtI'))
